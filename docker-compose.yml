@@ -1,0 +1,33 @@
+version: '2'
+services:
+  traefik:
+    image: traefik:v2.5.5
+    container_name: traefik
+    restart: "no"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      #- ${PWD}/config/traefik/traefik.toml:/traefik.toml
+      #- ${PWD}/config/traefik/traefik_dynamic.toml:/traefik_dynamic.toml
+      #- /home/till/docker-data/traefik/acme.json:/acme.json      
+    ports:
+      - "80:80"
+      - "443:443"
+
+  mqtt:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    restart: "no"
+    expose:
+      - "443"
+    volumes:
+      - "./config/mosquitto:/mosquitto/config/"
+   #   - "mosquitto:./data"
+    labels:
+      - traefik.enable=true
+      - traefik.port=443
+      - traefik.tcp.services.mqtt.loadbalancer.server.port=443
+      - traefik.tcp.routers.mqtt.entrypoints=websecure # <-- I use this for convenience and have set up Mosquitto to listen accordingly.
+      - traefik.tcp.routers.mqtt.rule=HostSNI(`localhost`)
+      - traefik.tcp.routers.mqtt.service=mqtt
+      - traefik.tcp.routers.mqtt.tls=true
+      #- traefik.tcp.routers.mqtt.tls.certresolver=lets-encrypt
